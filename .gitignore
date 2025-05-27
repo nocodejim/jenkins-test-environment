@@ -1,0 +1,23 @@
+# Ignore system files
+.DS_Store
+*.swp
+*~
+
+# Ignore dependency directories
+node_modules/
+venv/
+__pycache__/
+
+# Ignore build artifacts
+*.log
+build/
+dist/
+*.gem
+*.egg-info
+*.pyc
+*.pyo
+
+# Ignore sensitive information
+.env
+*.pem
+*.key
