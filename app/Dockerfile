@@ -8,13 +8,17 @@ WORKDIR /app
 COPY . .
 
 # Install any needed packages specified in requirements.txt
+# For this simple app, Flask is the only dependency.
+# In a real application, you would have a requirements.txt file:
+# COPY requirements.txt .
+# RUN pip install -r requirements.txt
 RUN pip install Flask
 
 # Make port 5000 available to the world outside this container
 EXPOSE 5000
 
-# Define environment variable
-ENV NAME World
+# Define environment variable (Corrected format)
+ENV NAME=World
 
 # Run app.py when the container launches
 CMD ["python", "app.py"]

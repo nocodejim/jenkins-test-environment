@@ -1,8 +1,13 @@
+# This file defines the Kubernetes Deployments for the Selenium Hub and Chrome Nodes.
+
+# --- Selenium Hub Deployment ---
 apiVersion: apps/v1
 kind: Deployment
 metadata:
   name: selenium-hub
-  namespace: jenkins
+  namespace: jenkins # Ensure this is deployed in the 'jenkins' namespace
+  labels:
+    app: selenium-hub
 spec:
   replicas: 1
   selector:
@@ -15,19 +20,30 @@ spec:
     spec:
       containers:
       - name: selenium-hub
-        image: selenium/hub:latest
+        image: selenium/hub:4.21.0 # Using a specific version is good practice
         ports:
-        - containerPort: 4442
-        - containerPort: 4443
-        - containerPort: 4444
+        - containerPort: 4442 # Event Bus Publish Port
+        - containerPort: 4443 # Event Bus Subscribe Port
+        - containerPort: 4444 # Main Selenium Hub Port (for tests to connect to)
+        resources: # Optional: Define resource requests and limits
+          requests:
+            memory: "256Mi"
+            cpu: "250m"
+          limits:
+            memory: "512Mi"
+            cpu: "500m"
+
 ---
+# --- Selenium Chrome Node Deployment ---
 apiVersion: apps/v1
 kind: Deployment
 metadata:
   name: selenium-node-chrome
-  namespace: jenkins
+  namespace: jenkins # Ensure this is deployed in the 'jenkins' namespace
+  labels:
+    app: selenium-node-chrome
 spec:
-  replicas: 2 # Start with 2 Chrome nodes
+  replicas: 2 # Start with 2 Chrome nodes, can be scaled
   selector:
     matchLabels:
       app: selenium-node-chrome
@@ -36,14 +52,33 @@ spec:
       labels:
         app: selenium-node-chrome
     spec:
+      # To increase shared memory for Chrome nodes:
+      volumes:
+      - name: dshm # Define a shared memory volume
+        emptyDir:
+          medium: Memory # Use RAM for this emptyDir
+          sizeLimit: 1Gi # Optional: set a size limit for the shared memory
       containers:
       - name: selenium-node-chrome
-        image: selenium/node-chrome:latest
-        shm_size: '2g'
-        environment:
+        image: selenium/node-chrome:4.21.0 # Using a specific version
+        # Mount the shared memory volume to /dev/shm
+        volumeMounts:
+        - mountPath: /dev/shm
+          name: dshm
+        # Corrected 'env' field for environment variables
+        env:
         - name: SE_EVENT_BUS_HOST
-          value: "selenium-hub"
+          value: "selenium-hub.jenkins.svc.cluster.local" # Fully qualified service name
         - name: SE_EVENT_BUS_PUBLISH_PORT
           value: "4442"
         - name: SE_EVENT_BUS_SUBSCRIBE_PORT
           value: "4443"
+        # Optional: Define resource requests and limits
+        # Selenium nodes can be resource-intensive
+        resources:
+          requests:
+            memory: "512Mi"
+            cpu: "500m"
+          limits:
+            memory: "2Gi" # Chrome can use a lot of memory
+            cpu: "1"
